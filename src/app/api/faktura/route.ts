@@ -4,8 +4,6 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 function formatNrFakture(n: number) {
   return `F-${String(n).padStart(6, "0")}`;
