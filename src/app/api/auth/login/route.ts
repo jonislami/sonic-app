@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { SignJWT } from "jose";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+
 const COOKIE_NAME = "sonic_session";
 
 function getSecret() {
