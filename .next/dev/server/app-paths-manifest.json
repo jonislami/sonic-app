@@ -1,0 +1,18 @@
+{
+  "/api/automjete/route": "app/api/automjete/route.js",
+  "/api/dashboard/route": "app/api/dashboard/route.js",
+  "/api/furnizues/route": "app/api/furnizues/route.js",
+  "/api/inspekt-kategori/route": "app/api/inspekt-kategori/route.js",
+  "/api/inspektime/route": "app/api/inspektime/route.js",
+  "/api/inventar/route": "app/api/inventar/route.js",
+  "/api/kliente/route": "app/api/kliente/route.js",
+  "/api/raporte/ditore/route": "app/api/raporte/ditore/route.js",
+  "/furnizues/page": "app/furnizues/page.js",
+  "/inspekt/kategori/page": "app/inspekt/kategori/page.js",
+  "/inspekt/page": "app/inspekt/page.js",
+  "/inventar/page": "app/inventar/page.js",
+  "/kliente/page": "app/kliente/page.js",
+  "/page": "app/page.js",
+  "/raporte/ditore/page": "app/raporte/ditore/page.js",
+  "/servise/page": "app/servise/page.js"
+}

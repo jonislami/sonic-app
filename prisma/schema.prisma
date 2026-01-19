@@ -1,0 +1,361 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/**
+ * =========================
+ * KLIENTËT + AUTOMJETET
+ * =========================
+ */
+
+model Klient {
+  klientId         BigInt   @id @default(autoincrement())
+  emri             String
+  mbiemri          String?
+  telefoni         String?
+  email            String?
+  adresa           String?
+  dataRegjistrimit DateTime @default(now())
+
+  automjete Automjet[]
+  faktura   Fakture[]
+
+  @@index([emri])
+  @@index([telefoni])
+}
+
+model Automjet {
+  automjetId BigInt @id @default(autoincrement())
+  klientId   BigInt
+
+  marka     String?
+  modeli    String?
+  viti      Int?
+  targa     String?
+  vin       String?
+  motori    String?
+  kmAktuale BigInt?
+
+  klient     Klient      @relation(fields: [klientId], references: [klientId], onDelete: Cascade)
+  servise    Servis[]
+  faktura    Fakture[]
+  inspektime Inspektim[]
+
+  @@index([klientId])
+  @@index([targa])
+  @@index([vin])
+}
+
+/**
+ * =========================
+ * SERVISE + PUNË + PJESË + PAGESA
+ * =========================
+ */
+
+model Servis {
+  servisId   BigInt @id @default(autoincrement())
+  automjetId BigInt
+
+  dataServisit DateTime @default(now())
+  kmNeServis   BigInt?
+  pershkrimi   String?
+  statusi      String   @default("Hap") // Hap / Mbyllur
+
+  automjet Automjet @relation(fields: [automjetId], references: [automjetId], onDelete: Cascade)
+
+  pune             PuneServisi[]
+  pjese            PjeseServisi[]
+  pagesa           PagesaServisi[]
+  faktura          Fakture[] // faturat që lidhen me këtë servis (zakonisht 1)
+  levizjeInventari InventarLevizje[]
+
+  @@index([automjetId])
+  @@index([dataServisit])
+  @@index([statusi])
+}
+
+model PuneServisi {
+  puneId   BigInt @id @default(autoincrement())
+  servisId BigInt
+
+  pershkrimi String
+  sasia      Int     @default(1)
+  cmimi      Decimal @default(0) @db.Decimal(12, 2)
+  totali     Decimal @default(0) @db.Decimal(12, 2)
+
+  servis Servis @relation(fields: [servisId], references: [servisId], onDelete: Cascade)
+
+  @@index([servisId])
+}
+
+model PjeseServisi {
+  pjeseId  BigInt @id @default(autoincrement())
+  servisId BigInt
+
+  // Pjesa e shkruar manualisht (kur s'është në inventar)
+  pershkrimi String
+  sasia      Int     @default(1)
+  cmimi      Decimal @default(0) @db.Decimal(12, 2)
+  totali     Decimal @default(0) @db.Decimal(12, 2)
+
+  furnizues String? // opsionale, tekst
+
+  // Lidhje me inventar (kur pjesa merret nga magazina)
+  inventarId BigInt?
+  inventar   InventarPjese? @relation(fields: [inventarId], references: [inventarId], onDelete: SetNull)
+
+  servis Servis @relation(fields: [servisId], references: [servisId], onDelete: Cascade)
+
+  @@index([servisId])
+  @@index([inventarId])
+}
+
+model PagesaServisi {
+  pagesaId BigInt @id @default(autoincrement())
+  servisId BigInt
+
+  dataPageses DateTime @default(now())
+  menyra      String   @default("Cash") // Cash / Transfer / Kartel
+  shuma       Decimal  @default(0) @db.Decimal(12, 2)
+  shenim      String?
+
+  servis Servis @relation(fields: [servisId], references: [servisId], onDelete: Cascade)
+
+  @@index([servisId])
+  @@index([dataPageses])
+}
+
+/**
+ * =========================
+ * FAKTURA + RRESHTA + PAGESA
+ * =========================
+ */
+
+model Fakture {
+  faktureId BigInt   @id @default(autoincrement())
+  nrFakture String   @unique
+  data      DateTime @default(now())
+
+  klientId   BigInt
+  automjetId BigInt?
+  servisId   BigInt?
+  zbritje    Decimal @default(0) @db.Decimal(12, 2)
+
+  valuta  String  @default("EUR")
+  statusi String  @default("Hap") // Hap / Paguar / Anuluar
+  shenim  String?
+
+  klient   Klient    @relation(fields: [klientId], references: [klientId], onDelete: Restrict)
+  automjet Automjet? @relation(fields: [automjetId], references: [automjetId], onDelete: SetNull)
+  servis   Servis?   @relation(fields: [servisId], references: [servisId], onDelete: SetNull)
+
+  rreshta   FaktureRresht[]
+  pagesa    FakturePagesa[]
+  bakshishe Bakshish[]
+
+  @@index([klientId])
+  @@index([automjetId])
+  @@index([servisId])
+  @@index([data])
+  @@index([statusi])
+}
+
+model FaktureRresht {
+  rreshtId  BigInt @id @default(autoincrement())
+  faktureId BigInt
+
+  pershkrimi String
+  sasia      Int     @default(1)
+  cmimi      Decimal @default(0) @db.Decimal(12, 2)
+  totali     Decimal @default(0) @db.Decimal(12, 2)
+
+  fakture Fakture @relation(fields: [faktureId], references: [faktureId], onDelete: Cascade)
+
+  @@index([faktureId])
+}
+
+model FakturePagesa {
+  pagesaId  BigInt @id @default(autoincrement())
+  faktureId BigInt
+
+  dataPageses DateTime @default(now())
+  menyra      String   @default("Cash")
+  shuma       Decimal  @default(0) @db.Decimal(12, 2)
+  shenim      String?
+  zbritje     Decimal  @default(0) @db.Decimal(12, 2)
+
+  fakture Fakture @relation(fields: [faktureId], references: [faktureId], onDelete: Cascade)
+
+  @@index([faktureId])
+  @@index([dataPageses])
+}
+
+model Bakshish {
+  bakshishId BigInt   @id @default(autoincrement())
+  data       DateTime @default(now())
+  shuma      Decimal  @default(0) @db.Decimal(12, 2)
+  menyra     String   @default("Cash") // Cash / Transfer / Kartel
+  shenim     String?
+
+  faktureId BigInt?
+  fakture   Fakture? @relation(fields: [faktureId], references: [faktureId], onDelete: SetNull)
+
+  @@index([data])
+  @@index([faktureId])
+}
+
+/**
+ * =========================
+ * INVENTAR PJESËSH + LËVIZJE
+ * =========================
+ */
+
+model Furnizues {
+  furnizuesId BigInt  @id @default(autoincrement())
+  emri        String
+  telefoni    String?
+  email       String?
+  adresa      String?
+
+  inventar InventarPjese[]
+
+  @@index([emri])
+}
+
+model InventarPjese {
+  inventarId BigInt  @id @default(autoincrement())
+  kodi       String? // OEM / Internal code
+  emri       String
+  marka      String?
+  modeli     String?
+
+  sasiaStok   Int     @default(0)
+  cmimiBlerje Decimal @default(0) @db.Decimal(12, 2)
+  cmimiShitje Decimal @default(0) @db.Decimal(12, 2)
+
+  furnizuesId BigInt?
+  furnizues   Furnizues? @relation(fields: [furnizuesId], references: [furnizuesId], onDelete: SetNull)
+
+  levizje      InventarLevizje[]
+  pjeseServisi PjeseServisi[]
+
+  @@index([emri])
+  @@index([furnizuesId])
+  @@index([kodi])
+}
+
+model InventarLevizje {
+  levizjeId  BigInt   @id @default(autoincrement())
+  inventarId BigInt
+  data       DateTime @default(now())
+
+  tipi   String // HYRJE / DALJE / KORRIGJIM
+  sasia  Int
+  cmimi  Decimal @default(0) @db.Decimal(12, 2)
+  shenim String?
+
+  // kur DALJE vjen nga një servis
+  servisId BigInt?
+  servis   Servis? @relation(fields: [servisId], references: [servisId], onDelete: SetNull)
+
+  inventar InventarPjese @relation(fields: [inventarId], references: [inventarId], onDelete: Cascade)
+
+  @@index([inventarId])
+  @@index([data])
+  @@index([servisId])
+}
+
+model Shpenzim {
+  shpenzimId BigInt   @id @default(autoincrement())
+  data       DateTime @default(now())
+
+  kategoria  String // Qira, Rryma, Vegla, Marketing, Rroga, Taksa, Tjeter
+  pershkrimi String?
+  shuma      Decimal @default(0) @db.Decimal(12, 2)
+
+  menyra    String? // Cash/Transfer/Kartel
+  furnizues String? // opsional tekst
+  nrFature  String? // opsional
+
+  @@index([data])
+  @@index([kategoria])
+}
+
+model Inspektim {
+  inspektimId BigInt   @id @default(autoincrement())
+  data        DateTime @default(now())
+
+  automjetId BigInt
+  automjet   Automjet @relation(fields: [automjetId], references: [automjetId], onDelete: Cascade)
+
+  km          BigInt?
+  komente     String?
+  demtimeJson String?
+  statusi     String  @default("Draft") // Draft / Perfundu
+
+  iteme InspektimItem[]
+
+  @@index([automjetId])
+  @@index([data])
+}
+
+model InspektimKategori {
+  kategoriId BigInt @id @default(autoincrement())
+
+  emri       String
+  pershkrimi String?
+  renditja   Int     @default(0)
+  aktiv      Boolean @default(true)
+
+  iteme        InspektimKategoriItem[]
+  inspektimIteme InspektimItem[] // ✅ opposite relation
+
+  @@index([emri])
+  @@index([aktiv])
+  @@index([renditja])
+}
+
+model InspektimKategoriItem {
+  kategoriItemId BigInt @id @default(autoincrement())
+  kategoriId     BigInt
+
+  key      String
+  etikete  String
+  renditja Int     @default(0)
+  aktiv    Boolean @default(true)
+
+  kategori InspektimKategori @relation(fields: [kategoriId], references: [kategoriId], onDelete: Cascade)
+
+  @@unique([kategoriId, key])
+  @@index([kategoriId])
+  @@index([aktiv])
+  @@index([renditja])
+}
+
+
+
+model InspektimItem {
+  itemId BigInt @id @default(autoincrement())
+
+  inspektimId BigInt
+  inspektim   Inspektim @relation(fields: [inspektimId], references: [inspektimId], onDelete: Cascade)
+
+  // ✅ NEW
+  kategoriId BigInt?
+  kategori   InspektimKategori? @relation(fields: [kategoriId], references: [kategoriId], onDelete: SetNull)
+
+  grup    String
+  key     String
+  etikete String
+  status  String // OK / WARN / FAIL
+
+  @@unique([inspektimId, key])
+  @@index([inspektimId])
+  @@index([kategoriId])
+}
+
