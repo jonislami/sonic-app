@@ -7,12 +7,8 @@ export default function LoginClient() {
   const router = useRouter();
   const sp = useSearchParams();
 
-  const next = useMemo(() => {
-  const n = sp.get("next");
-  // mos lejo qe next me kthy prap te /login
-  if (!n || n === "/login") return "/";
-  return n;
-}, [sp]);
+  // ✅ Dashboard te ti është "/", jo "/dashboard"
+  const next = useMemo(() => sp.get("next") || "/", [sp]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,23 +20,34 @@ export default function LoginClient() {
     setErr(null);
     setLoading(true);
 
-    const res = await fetch("/api/auth/login", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  credentials: "include",
-  body: JSON.stringify({ email, password }),
-});
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
 
+      const d = await res.json().catch(() => ({}));
 
-    const d = await res.json().catch(() => ({}));
-    setLoading(false);
+      if (!res.ok) {
+        setErr(d?.error ?? "Gabim gjatë login.");
+        setLoading(false);
+        return;
+      }
 
-    if (!res.ok) {
-      setErr(d?.error ?? "Gabim gjatë login.");
-      return;
+      // ✅ refresh + redirect i sigurt
+      router.replace(next);
+      router.refresh();
+
+      // Nëse prap “s’po lëviz”, përdore këtë (shumë i sigurt):
+      // window.location.assign(next);
+
+      setLoading(false);
+    } catch (e: any) {
+      setLoading(false);
+      setErr(e?.message ?? "Gabim gjatë login.");
     }
-
-    router.replace(next);
   }
 
   return (
@@ -78,6 +85,7 @@ export default function LoginClient() {
           ) : null}
 
           <button
+            type="submit"
             disabled={loading}
             className="w-full rounded-lg bg-black px-3 py-2 text-white disabled:opacity-60"
           >
