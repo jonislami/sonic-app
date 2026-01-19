@@ -1,58 +1,77 @@
 "use client";
 
-import { INSPECTION_TEMPLATE, InspectionStatus } from "@/lib/inspection-template";
+import { INSPECTION_TEMPLATE, type InspectionStatus } from "@/lib/inspection-template";
 
 export type ChecklistState = Record<string, InspectionStatus>;
 
-export default function InspectionChecklist({
-  value,
-  onChange,
-}: {
+type Props = {
   value: ChecklistState;
   onChange: (next: ChecklistState) => void;
-}) {
+};
+
+const OPTIONS: Array<{ label: string; value: InspectionStatus }> = [
+  { label: "OK", value: "OK" },
+  { label: "Vëmendje", value: "WARN" },
+  { label: "Urgjente", value: "FAIL" },
+];
+
+export default function InspectionChecklist({ value, onChange }: Props) {
   function setStatus(key: string, status: InspectionStatus) {
     onChange({ ...value, [key]: status });
   }
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border p-3 bg-gray-50 text-sm">
-        <div className="font-semibold">Legjenda</div>
-        <div className="flex gap-3 mt-2">
-          <div className="flex items-center gap-2"><span className="h-4 w-4 bg-green-500 inline-block rounded" /> OK</div>
-          <div className="flex items-center gap-2"><span className="h-4 w-4 bg-yellow-400 inline-block rounded" /> Vëmendje</div>
-          <div className="flex items-center gap-2"><span className="h-4 w-4 bg-red-500 inline-block rounded" /> Urgjente</div>
+      {/* Legjenda */}
+      <div className="rounded-xl border p-4">
+        <div className="font-semibold mb-2">Legjenda</div>
+        <div className="flex items-center gap-4 text-sm">
+          <span className="flex items-center gap-2">
+            <span className="inline-block h-4 w-4 rounded bg-green-600" /> OK
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="inline-block h-4 w-4 rounded bg-yellow-400" /> Vëmendje
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="inline-block h-4 w-4 rounded bg-red-600" /> Urgjente
+          </span>
         </div>
       </div>
 
-      {INSPECTION_TEMPLATE.map((group) => (
-        <div key={group.title}>
-          <div className="mb-2 font-semibold">{group.title}</div>
-          {group.items.map((item) => {
-            const v = value[item.key];
-            return (
-              <div key={item.key} className="grid grid-cols-[1fr_34px_34px_34px] items-center gap-2 py-1">
-                <div className="text-sm">{item.label}</div>
+      {INSPECTION_TEMPLATE.map((g) => (
+        <div key={g.title} className="space-y-3">
+          <div className="text-lg font-semibold">{g.title}</div>
 
-                <button
-                  onClick={() => setStatus(item.key, "OK")}
-                  className={`h-6 w-6 rounded border ${v === "OK" ? "bg-green-500" : "bg-white"}`}
-                  title="OK"
-                />
-                <button
-                  onClick={() => setStatus(item.key, "WARN")}
-                  className={`h-6 w-6 rounded border ${v === "WARN" ? "bg-yellow-400" : "bg-white"}`}
-                  title="Vëmendje"
-                />
-                <button
-                  onClick={() => setStatus(item.key, "FAIL")}
-                  className={`h-6 w-6 rounded border ${v === "FAIL" ? "bg-red-500" : "bg-white"}`}
-                  title="Urgjente"
-                />
-              </div>
-            );
-          })}
+          <div className="space-y-2">
+            {g.items.map((it) => {
+              const st = value[it.key];
+
+              return (
+                <div
+                  key={it.key}
+                  className="flex items-center justify-between gap-3 rounded-lg border p-3"
+                >
+                  <div className="text-sm">{it.label}</div>
+
+                  <div className="flex items-center gap-2">
+                    {OPTIONS.map((o) => (
+                      <button
+                        key={o.value}
+                        type="button"
+                        onClick={() => setStatus(it.key, o.value)}
+                        className={`h-8 w-10 rounded border text-sm font-semibold ${
+                          st === o.value ? "bg-black text-white border-black" : "bg-white hover:bg-gray-50"
+                        }`}
+                        title={o.label}
+                      >
+                        {o.value === "OK" ? "OK" : o.value === "WARN" ? "!" : "X"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       ))}
     </div>
