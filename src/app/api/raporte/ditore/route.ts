@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 function dayRange(d?: string) {
   const now = new Date();
   const base = d
