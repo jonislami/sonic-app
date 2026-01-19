@@ -1,9 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-// ✅ Prisma duhet NODE runtime (jo Edge)
 export const runtime = "nodejs";
-// ✅ mos e cache (dashboard duhet gjithmon live)
 export const dynamic = "force-dynamic";
 
 function thisMonthYM() {
@@ -24,43 +22,30 @@ function ymRange(ym: string) {
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
-
-    // ✅ nëse mungon ym, merre muajin aktual
     const ymRaw = (url.searchParams.get("ym") ?? "").trim();
     const ym = ymRaw || thisMonthYM();
 
     const range = ymRange(ym);
-    if (!range) {
-      return NextResponse.json({ error: "ym duhet p.sh. 2026-01" }, { status: 400 });
-    }
+    if (!range) return NextResponse.json({ error: "ym duhet p.sh. 2026-01" }, { status: 400 });
 
     const { start, end } = range;
 
-    // ============ Të hyra nga faturat (total rreshta) në muaj
     const teHyraAgg = await prisma.faktureRresht.aggregate({
       _sum: { totali: true },
       where: {
-        fakture: {
-          data: { gte: start, lt: end },
-          statusi: { not: "Anuluar" },
-        },
+        fakture: { data: { gte: start, lt: end }, statusi: { not: "Anuluar" } },
       },
     });
     const teHyra = Number(teHyraAgg._sum.totali?.toString() ?? 0);
 
-    // ============ Kosto pjesësh (DALJE) në muaj
     const dalje = await prisma.inventarLevizje.findMany({
       where: { data: { gte: start, lt: end }, tipi: "DALJE" },
       select: { sasia: true, cmimi: true },
     });
-    const kostoPjesesh = dalje.reduce(
-      (s, x) => s + Number(x.cmimi.toString()) * Number(x.sasia),
-      0
-    );
+    const kostoPjesesh = dalje.reduce((s, x) => s + Number(x.cmimi.toString()) * Number(x.sasia), 0);
 
     const fitimBruto = teHyra - kostoPjesesh;
 
-    // ============ Shpenzime tjera në muaj
     const shpenzimeAgg = await prisma.shpenzim.aggregate({
       _sum: { shuma: true },
       where: { data: { gte: start, lt: end } },
@@ -69,13 +54,9 @@ export async function GET(req: Request) {
 
     const fitimNeto = fitimBruto - shpenzimeTjera;
 
-    // ============ Borxhet (Top)
-    // ✅ rekomandim: vetëm faturat e muajit (më logjike për dashboard mujor)
+    // ✅ borxhet vetëm brenda muajit (më logjike)
     const faturat = await prisma.fakture.findMany({
-      where: {
-        data: { gte: start, lt: end },
-        statusi: { not: "Anuluar" },
-      },
+      where: { data: { gte: start, lt: end }, statusi: { not: "Anuluar" } },
       include: { rreshta: true, pagesa: true, klient: true },
       orderBy: { data: "desc" },
       take: 300,
@@ -85,7 +66,7 @@ export async function GET(req: Request) {
       .map((f) => {
         const total = f.rreshta.reduce((s, r) => s + Number(r.totali.toString()), 0);
         const paguar = f.pagesa.reduce((s, p) => s + Number(p.shuma.toString()), 0);
-        const borxh = Math.max(0, total - Math.min(total, paguar)); // ✅ mos lejo negative
+        const borxh = Math.max(0, total - Math.min(total, paguar));
         return {
           faktureId: f.faktureId.toString(),
           nrFakture: f.nrFakture,
@@ -99,7 +80,6 @@ export async function GET(req: Request) {
 
     const borxhiTotal = borxheTop.reduce((s, x) => s + x.borxh, 0);
 
-    // ============ Servise Hap (quick list)
     const serviseHap = await prisma.servis.findMany({
       where: { statusi: "Hap" },
       orderBy: { dataServisit: "desc" },
@@ -116,7 +96,6 @@ export async function GET(req: Request) {
       klient: `${s.automjet.klient.emri} ${s.automjet.klient.mbiemri ?? ""}`.trim(),
     }));
 
-    // ============ Low-stock (top 10)
     const inv = await prisma.inventarPjese.findMany({
       orderBy: { sasiaStok: "asc" },
       take: 10,
