@@ -2,6 +2,10 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+
 function toCsv(rows: any[]) {
   if (!rows || rows.length === 0) return "";
   const headers = Object.keys(rows[0]);
