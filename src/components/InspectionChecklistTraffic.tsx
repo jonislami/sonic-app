@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import { INSPECTION_TEMPLATE, type TrafficStatus } from "@/lib/inspection-template";
 
 export type TrafficState = Record<string, TrafficStatus | undefined>;
 
