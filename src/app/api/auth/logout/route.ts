@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
-import { clearSession } from "@/lib/auth";
+
+const COOKIE_NAME = "sonic_session";
 
 export async function POST() {
-  await clearSession();
-  return NextResponse.json({ ok: true });
+  const res = NextResponse.json({ ok: true });
+  res.cookies.set({
+    name: COOKIE_NAME,
+    value: "",
+    path: "/",
+    maxAge: 0,
+  });
+  return res;
 }
