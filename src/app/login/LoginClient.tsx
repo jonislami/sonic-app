@@ -7,7 +7,7 @@ export default function LoginClient() {
   const router = useRouter();
   const sp = useSearchParams();
 
-  const next = useMemo(() => sp.get("next") || "/dashboard", [sp]);
+  const next = useMemo(() => sp.get("next") || "/", [sp]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
