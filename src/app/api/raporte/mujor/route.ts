@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 function monthRange(ym: string) {
   if (!/^\d{4}-\d{2}$/.test(ym)) return null;
   const [Y, M] = ym.split("-").map(Number);
