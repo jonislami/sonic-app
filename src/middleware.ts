@@ -12,7 +12,7 @@ function getSecret() {
 }
 
 async function hasValidSession(req: NextRequest) {
-  const token = req.cookies.get(sonic_sessio)?.value;
+  const token = req.cookies.get("sonic_session")?.value;
   if (!token) return false;
 
   try {
