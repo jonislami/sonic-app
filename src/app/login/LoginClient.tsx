@@ -20,10 +20,12 @@ export default function LoginClient() {
     setLoading(true);
 
     const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  credentials: "include",
+  body: JSON.stringify({ email, password }),
+});
+
 
     const d = await res.json().catch(() => ({}));
     setLoading(false);
