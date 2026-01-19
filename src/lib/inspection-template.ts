@@ -1,9 +1,15 @@
-export type TrafficStatus = "OK" | "WARN" | "FAIL";
+export type InspectionStatus = "OK" | "WARN" | "FAIL";
 
-export type InspectionGroup = {
-  title: string;
-  items: { key: string; label: string }[];
+export type InspectionTemplateItem = {
+  key: string;
+  label: string;
 };
+
+export type InspectionTemplateGroup = {
+  title: string;
+  items: InspectionTemplateItem[];
+};
+
 
 export const INSPECTION_TEMPLATE: InspectionGroup[] = [
   {
