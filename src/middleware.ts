@@ -6,7 +6,9 @@ const COOKIE_NAME = "sonic_session";
 
 function getSecret() {
   const s = process.env.AUTH_SECRET;
-  return new TextEncoder().encode(s || "missing");
+  // ✅ MOS përdor fallback "missing"
+  if (!s) throw new Error("AUTH_SECRET mungon");
+  return new TextEncoder().encode(s);
 }
 
 async function hasValidSession(req: NextRequest) {
@@ -24,19 +26,19 @@ async function hasValidSession(req: NextRequest) {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // lejo public
+  // ✅ Public routes + assets
   if (
     pathname === "/login" ||
-    pathname.startsWith("/api/auth/") ||
+    pathname.startsWith("/api/auth") ||
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/favicon.ico") ||
-    pathname.startsWith("/logo.png") ||
-    pathname.startsWith("/public")
+    pathname === "/favicon.ico" ||
+    pathname === "/logo.png"
   ) {
     return NextResponse.next();
   }
 
   const ok = await hasValidSession(req);
+
   if (!ok) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
@@ -48,7 +50,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
