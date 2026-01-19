@@ -6,13 +6,12 @@ const COOKIE_NAME = "sonic_session";
 
 function getSecret() {
   const s = process.env.AUTH_SECRET;
-  // ✅ MOS përdor fallback "missing"
   if (!s) throw new Error("AUTH_SECRET mungon");
   return new TextEncoder().encode(s);
 }
 
 async function hasValidSession(req: NextRequest) {
-  const token = req.cookies.get("sonic_session")?.value;
+  const token = req.cookies.get(COOKIE_NAME)?.value;
   if (!token) return false;
 
   try {
@@ -24,9 +23,9 @@ async function hasValidSession(req: NextRequest) {
 }
 
 export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const { pathname, search } = req.nextUrl;
 
-  // ✅ Public routes + assets
+  // ✅ public + assets
   if (
     pathname === "/login" ||
     pathname.startsWith("/api/auth") ||
@@ -42,7 +41,8 @@ export async function middleware(req: NextRequest) {
   if (!ok) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("next", pathname);
+    // ✅ ruaj edhe query string
+    url.searchParams.set("next", pathname + (search || ""));
     return NextResponse.redirect(url);
   }
 
