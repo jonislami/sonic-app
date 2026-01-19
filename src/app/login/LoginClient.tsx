@@ -1,13 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginClient() {
-  const router = useRouter();
   const sp = useSearchParams();
 
-  // ✅ Dashboard te ti është "/", jo "/dashboard"
+  // ✅ Dashboard te ti është "/" (sepse ke src/app/page.tsx)
   const next = useMemo(() => sp.get("next") || "/", [sp]);
 
   const [email, setEmail] = useState("");
@@ -26,27 +25,22 @@ export default function LoginClient() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ email, password }),
+        cache: "no-store",
       });
 
       const d = await res.json().catch(() => ({}));
+      setLoading(false);
 
       if (!res.ok) {
         setErr(d?.error ?? "Gabim gjatë login.");
-        setLoading(false);
         return;
       }
 
-      // ✅ refresh + redirect i sigurt
-      router.replace(next);
-      router.refresh();
-
-      // Nëse prap “s’po lëviz”, përdore këtë (shumë i sigurt):
-      // window.location.assign(next);
-
-      setLoading(false);
+      // ✅ Hard redirect (më i sigurt me middleware/cookie)
+      window.location.href = next;
     } catch (e: any) {
       setLoading(false);
-      setErr(e?.message ?? "Gabim gjatë login.");
+      setErr("Gabim në rrjet. Provo prap.");
     }
   }
 
@@ -85,7 +79,6 @@ export default function LoginClient() {
           ) : null}
 
           <button
-            type="submit"
             disabled={loading}
             className="w-full rounded-lg bg-black px-3 py-2 text-white disabled:opacity-60"
           >
